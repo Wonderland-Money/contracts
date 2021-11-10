@@ -854,7 +854,7 @@ interface ITimeBondDepository {
     function deposit( uint _amount, uint _maxPrice, address _depositor) external returns ( uint );
 }
 
-contract TraderJoe_ZapIn_V1 is ZapInBaseV3_1 {
+contract Wonderland_ZapIn_V1 is ZapInBaseV3_1 {
     using SafeERC20 for IERC20;
 
     mapping (ITimeBondDepository => address) public allowedPairs;
@@ -935,7 +935,8 @@ contract TraderJoe_ZapIn_V1 is ZapInBaseV3_1 {
         address _swapTarget,
         bytes calldata swapData,
         bool transferResidual,
-        uint _bondMaxPrice
+        uint _bondMaxPrice,
+        address _to
     ) external payable stopInEmergency returns (uint256) {
         require (allowedPairs[_bondDepository] != address(0), "BNA");
         uint256 toInvest =
@@ -955,7 +956,7 @@ contract TraderJoe_ZapIn_V1 is ZapInBaseV3_1 {
         
 
         _approveToken(allowedPairs[_bondDepository], address(_bondDepository), LPBought);
-        _bondDepository.deposit(LPBought, _bondMaxPrice, msg.sender);
+        _bondDepository.deposit(LPBought, _bondMaxPrice, _to);
 
         emit zapIn(msg.sender, allowedPairs[_bondDepository], LPBought);
         
@@ -969,7 +970,8 @@ contract TraderJoe_ZapIn_V1 is ZapInBaseV3_1 {
         uint256 _minReturnTokens,
         address _swapTarget,
         bytes calldata swapData,
-        uint _bondMaxPrice
+        uint _bondMaxPrice,
+        address _to
     ) external payable stopInEmergency returns (uint256) {
         require (allowedReserves[_bondDepository] != address(0), "BNA");
         uint256 toInvest =
@@ -990,7 +992,7 @@ contract TraderJoe_ZapIn_V1 is ZapInBaseV3_1 {
         
 
         _approveToken(allowedReserves[_bondDepository], address(_bondDepository), TokenBought);
-        _bondDepository.deposit(TokenBought, _bondMaxPrice, msg.sender);
+        _bondDepository.deposit(TokenBought, _bondMaxPrice, _to);
         emit zapIn(msg.sender, allowedReserves[_bondDepository], TokenBought);
         
         return TokenBought;
