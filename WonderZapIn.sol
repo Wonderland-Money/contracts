@@ -654,14 +654,10 @@ abstract contract ZapBaseV2_1 is Ownable {
     using SafeERC20 for IERC20;
     bool public stopped = false;
 
+    event ApprovedTargets(address indexed target, bool isApproved);
+
     // swapTarget => approval status
     mapping(address => bool) public approvedTargets;
-
-    address internal constant ETHAddress =
-        0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-
-    address internal constant ZapperAdmin =
-        0x78a9e536EBdA08b5b9EDbE5785C9D1D50fA3278C;
 
     // circuit breaker modifiers
     modifier stopInEmergency {
@@ -669,18 +665,6 @@ abstract contract ZapBaseV2_1 is Ownable {
             revert("Paused");
         } else {
             _;
-        }
-    }
-
-    function _getBalance(address token)
-        internal
-        view
-        returns (uint256 balance)
-    {
-        if (token == address(0)) {
-            balance = address(this).balance;
-        } else {
-            balance = IERC20(token).balanceOf(address(this));
         }
     }
 
@@ -714,6 +698,7 @@ abstract contract ZapBaseV2_1 is Ownable {
 
         for (uint256 i = 0; i < targets.length; i++) {
             approvedTargets[targets[i]] = isApproved[i];
+            emit ApprovedTargets(targets[i], isApproved[i]);
         }
     }
 
@@ -854,14 +839,11 @@ interface ITimeBondDepository {
     function deposit( uint _amount, uint _maxPrice, address _depositor) external returns ( uint );
 }
 
-contract TraderJoe_ZapIn_V1 is ZapInBaseV3_1 {
+contract Wonderland_ZapIn_V1 is ZapInBaseV3_1 {
     using SafeERC20 for IERC20;
 
-    ITimeBondDepository private constant bondDepository = 
-        ITimeBondDepository(0xc26850686ce755FFb8690EA156E5A6cf03DcBDE1);
-
-    address private constant _pairAddress = 
-        0xf64e1c5B6E17031f5504481Ac8145F4c3eab4917;
+    mapping (ITimeBondDepository => address) public allowedPairs;
+    mapping (ITimeBondDepository => address) public allowedReserves;
 
     IUniswapV2Factory private constant joeFactory =
         IUniswapV2Factory(0x9Ad6C38BE94206cA50bb0d90783181662f0Cfa10);
@@ -875,10 +857,32 @@ contract TraderJoe_ZapIn_V1 is ZapInBaseV3_1 {
     uint256 private constant deadline =
         0xf000000000000000000000000000000000000000000000000000000000000000;
 
-    constructor()
+    address immutable DAO;
+    
+    struct Cache {
+        uint256 initialBalance;
+        uint256 balanceAfter;
+        uint256 toInvest;
+    }
+
+    event AddPairAddress(address indexed bondDepository, address pair);
+    event RemovePairAddress(address indexed bondDepository);
+    event AddReserveAddress(address indexed bondDepository, address reserve);
+    event RemoveReserveAddress(address indexed bondDepository);
+
+    constructor(address _DAO)
     {
+        DAO = _DAO;
         // 0x exchange
         approvedTargets[0xDef1C0ded9bec7F1a1670819833240f027b25EfF] = true;
+
+        //allowedPairs
+        allowedPairs[ITimeBondDepository(0xc26850686ce755FFb8690EA156E5A6cf03DcBDE1)] = 0xf64e1c5B6E17031f5504481Ac8145F4c3eab4917;
+        allowedPairs[ITimeBondDepository(0xA184AE1A71EcAD20E822cB965b99c287590c4FFe)] = 0x113f413371fC4CC4C9d6416cf1DE9dFd7BF747Df;
+
+        //allowedReserves
+        allowedReserves[ITimeBondDepository(0x694738E0A438d90487b4a549b201142c1a97B556)] = 0x130966628846BFd36ff31a822705796e8cb8C18D;
+        allowedReserves[ITimeBondDepository(0xE02B1AA2c4BE73093BE79d763fdFFC0E3cf67318)] = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
     }
 
     event zapIn(
@@ -887,48 +891,133 @@ contract TraderJoe_ZapIn_V1 is ZapInBaseV3_1 {
         uint256 tokensRec
     );
 
+    function addPairAddress(address bondDepository, address pair) external onlyOwner {
+        require(bondDepository != address(0), "BNA");
+        require(pair != address(0), "BNA");
+        allowedPairs[ITimeBondDepository(bondDepository)] = pair;
+        emit AddPairAddress(bondDepository, pair);
+    }
+
+    function removePairAddress(address bondDepository) external onlyOwner {
+        require(bondDepository != address(0), "BNA");
+       
+        allowedPairs[ITimeBondDepository(bondDepository)] = address(0);
+        emit RemovePairAddress(bondDepository);
+    }
+
+    function addReserveAddress(address bondDepository, address reserve) external onlyOwner {
+        require(bondDepository != address(0), "BNA");
+        require(reserve != address(0), "BNA");
+        allowedReserves[ITimeBondDepository(bondDepository)] = reserve;
+        emit AddReserveAddress(bondDepository, reserve);
+    }
+
+    function removeReserveAddress(address bondDepository) external onlyOwner {
+        require(bondDepository != address(0), "BNA");
+       
+        allowedReserves[ITimeBondDepository(bondDepository)] = address(0);
+        emit RemoveReserveAddress(bondDepository);
+    }
+
     /**
-    @notice Add liquidity to Quickswap pools with ETH/ERC20 Tokens
+    @notice Add liquidity to TraderJoe pools with ETH/ERC20 Tokens and buys Time Bond
     @param _FromTokenContractAddress The ERC20 token used (address(0x00) if ether)
     @param _amount The amount of fromToken to invest
     @param _minPoolTokens Minimum quantity of pool tokens to receive. Reverts otherwise
     @param _swapTarget Excecution target for the first swap
     @param swapData DEX quote data
-    @param transferResidual Set false to save gas by donating the residual remaining after a Zap
     @param _bondMaxPrice max price that bond can be bought
     @return Amount of LP bought
      */
-    function ZapIn(
+    function ZapInLp(
         address _FromTokenContractAddress,
+        ITimeBondDepository _bondDepository,
         uint256 _amount,
         uint256 _minPoolTokens,
         address _swapTarget,
         bytes calldata swapData,
-        bool transferResidual,
-        uint _bondMaxPrice
+        uint _bondMaxPrice,
+        address _to
     ) external payable stopInEmergency returns (uint256) {
-        uint256 toInvest =
+        require(msg.sender == _to, "NA");
+        require (allowedPairs[_bondDepository] != address(0), "BNA");
+        Cache memory cache;
+        cache.toInvest =
             _pullTokens(_FromTokenContractAddress, _amount);
+        
+        cache.initialBalance = _FromTokenContractAddress == address(0) 
+            ? address(this).balance
+            : IERC20(_FromTokenContractAddress).balanceOf(address(this));
 
         uint256 LPBought =
-            _performZapIn(
+            _performZapInLp(
                 _FromTokenContractAddress,
-                toInvest,
+                allowedPairs[_bondDepository],
+                cache.toInvest,
                 _swapTarget,
                 swapData,
-                transferResidual
+                true
             );
+        cache.balanceAfter = _FromTokenContractAddress == address(0) 
+            ? IERC20(wavaxTokenAddress).balanceOf(address(this))
+            : IERC20(_FromTokenContractAddress).balanceOf(address(this));
+        require((cache.initialBalance - cache.toInvest) == cache.balanceAfter, "Not all tokens used");
         require(LPBought >= _minPoolTokens, "High Slippage");
 
-        emit zapIn(msg.sender, _pairAddress, LPBought);
+        
 
-        _approveToken(_pairAddress, address(bondDepository), LPBought);
-        bondDepository.deposit(LPBought, _bondMaxPrice, msg.sender);
+        _approveToken(allowedPairs[_bondDepository], address(_bondDepository), LPBought);
+        _bondDepository.deposit(LPBought, _bondMaxPrice, _to);
+
+        emit zapIn(msg.sender, allowedPairs[_bondDepository], LPBought);
         
         return LPBought;
     }
 
-    function _getPairTokens()
+    function ZapIn(
+        address _FromTokenContractAddress,
+        ITimeBondDepository _bondDepository,
+        uint256 _amount,
+        uint256 _minReturnTokens,
+        address _swapTarget,
+        bytes calldata swapData,
+        uint _bondMaxPrice,
+        address _to
+    ) external payable stopInEmergency returns (uint256) {
+        require(msg.sender == _to, "NA");
+        require (allowedReserves[_bondDepository] != address(0), "BNA");
+        Cache memory cache;
+        cache.toInvest =
+            _pullTokens(_FromTokenContractAddress, _amount);
+
+        cache.initialBalance = _FromTokenContractAddress == address(0) 
+            ? address(this).balance
+            : IERC20(_FromTokenContractAddress).balanceOf(address(this));
+        uint256 TokenBought =
+            _fillQuote(
+                _FromTokenContractAddress,
+                allowedReserves[_bondDepository],
+                cache.toInvest,
+                _swapTarget,
+                swapData
+            );
+
+        cache.balanceAfter = _FromTokenContractAddress == address(0) 
+            ? IERC20(wavaxTokenAddress).balanceOf(address(this))
+            : IERC20(_FromTokenContractAddress).balanceOf(address(this));
+        require((cache.initialBalance - cache.toInvest) == cache.balanceAfter, "Not all tokens used");
+        require(TokenBought >= _minReturnTokens, "High Slippage");
+
+        
+
+        _approveToken(allowedReserves[_bondDepository], address(_bondDepository), TokenBought);
+        _bondDepository.deposit(TokenBought, _bondMaxPrice, _to);
+        emit zapIn(msg.sender, allowedReserves[_bondDepository], TokenBought);
+        
+        return TokenBought;
+    }
+
+    function _getPairTokens(address _pairAddress)
         internal
         pure
         returns (address token0, address token1)
@@ -938,25 +1027,27 @@ contract TraderJoe_ZapIn_V1 is ZapInBaseV3_1 {
         token1 = uniPair.token1();
     }
 
-    function _performZapIn(
+    function _performZapInLp(
         address _FromTokenContractAddress,
+        address _pairAddress,
         uint256 _amount,
         address _swapTarget,
-        bytes memory swapData,
+        bytes calldata swapData,
         bool transferResidual
     ) internal returns (uint256) {
         uint256 intermediateAmt;
         address intermediateToken;
         (address _ToUniswapToken0, address _ToUniswapToken1) =
-            _getPairTokens();
+            _getPairTokens(_pairAddress);
 
         if (
             _FromTokenContractAddress != _ToUniswapToken0 &&
             _FromTokenContractAddress != _ToUniswapToken1
         ) {
             // swap to intermediate
-            (intermediateAmt, intermediateToken) = _fillQuote(
+            (intermediateAmt, intermediateToken) = _fillQuoteLp(
                 _FromTokenContractAddress,
+                _pairAddress,
                 _amount,
                 _swapTarget,
                 swapData
@@ -1030,9 +1121,43 @@ contract TraderJoe_ZapIn_V1 is ZapInBaseV3_1 {
 
     function _fillQuote(
         address _fromTokenAddress,
+        address _toTokenAddress,
         uint256 _amount,
         address _swapTarget,
-        bytes memory swapData
+        bytes calldata swapData
+    ) internal returns (uint256 amountBought) {
+        if (_swapTarget == wavaxTokenAddress) {
+            IWETH(wavaxTokenAddress).deposit{ value: _amount }();
+            return _amount;
+        }
+
+        uint256 valueToSend;
+        if (_fromTokenAddress == address(0)) {
+            valueToSend = _amount;
+        } else {
+            _approveToken(_fromTokenAddress, _swapTarget, _amount);
+        }
+
+        
+        IERC20 token = IERC20(_toTokenAddress);
+        uint256 initialBalance = token.balanceOf(address(this));
+
+        require(approvedTargets[_swapTarget], "Target not Authorized");
+        (bool success, ) = _swapTarget.call{ value: valueToSend }(swapData);
+        require(success, "Error Swapping Tokens 1");
+
+        amountBought =
+            token.balanceOf(address(this)) - initialBalance;
+
+        require(amountBought > 0, "Error Swapping Tokens 2");
+    }
+
+    function _fillQuoteLp(
+        address _fromTokenAddress,
+        address _pairAddress,
+        uint256 _amount,
+        address _swapTarget,
+        bytes calldata swapData
     ) internal returns (uint256 amountBought, address intermediateToken) {
         if (_swapTarget == wavaxTokenAddress) {
             IWETH(wavaxTokenAddress).deposit{ value: _amount }();
@@ -1046,7 +1171,7 @@ contract TraderJoe_ZapIn_V1 is ZapInBaseV3_1 {
             _approveToken(_fromTokenAddress, _swapTarget, _amount);
         }
 
-        (address _token0, address _token1) = _getPairTokens();
+        (address _token0, address _token1) = _getPairTokens(_pairAddress);
         IERC20 token0 = IERC20(_token0);
         IERC20 token1 = IERC20(_token1);
         uint256 initialBalance0 = token0.balanceOf(address(this));
@@ -1158,5 +1283,24 @@ contract TraderJoe_ZapIn_V1 is ZapInBaseV3_1 {
         )[path.length - 1];
 
         require(tokenBought > 0, "Error Swapping Tokens 2");
+    }
+
+    /**
+     *  @notice allow owner to send lost tokens to the DAO
+     *  @return bool
+     */
+    function recoverLostToken( address _token ) external onlyOwner returns ( bool ) {
+        IERC20(_token).safeTransfer(DAO, IERC20( _token ).balanceOf( address(this)));
+        return true;
+    }
+
+    function refundETH() external onlyOwner {
+        if (address(this).balance > 0)
+        {
+            (bool success, ) = DAO.call{value: address(this).balance}(new bytes(0));
+            require(success, 'STE');
+        }
+
+        
     }
 }

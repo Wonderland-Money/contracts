@@ -1,211 +1,59 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity 0.7.5;
 
-
-/**
- * @dev Wrappers over Solidity's arithmetic operations with added overflow
- * checks.
- *
- * Arithmetic operations in Solidity wrap on overflow. This can easily result
- * in bugs, because programmers usually assume that an overflow raises an
- * error, which is the standard behavior in high level programming languages.
- * `SafeMath` restores this intuition by reverting the transaction when an
- * operation overflows.
- *
- * Using this library instead of the unchecked operations eliminates an entire
- * class of bugs, so it's recommended to use it always.
- */
-library SafeMath {
-    /**
-     * @dev Returns the addition of two unsigned integers, reverting on
-     * overflow.
-     *
-     * Counterpart to Solidity's `+` operator.
-     *
-     * Requirements:
-     *
-     * - Addition cannot overflow.
-     */
-    function add(uint256 a, uint256 b) internal pure returns (uint256) {
-        uint256 c = a + b;
-        require(c >= a, "SafeMath: addition overflow");
-
-        return c;
+library LowGasSafeMath {
+    /// @notice Returns x + y, reverts if sum overflows uint256
+    /// @param x The augend
+    /// @param y The addend
+    /// @return z The sum of x and y
+    function add(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        require((z = x + y) >= x);
     }
 
-    /**
-     * @dev Returns the subtraction of two unsigned integers, reverting on
-     * overflow (when the result is negative).
-     *
-     * Counterpart to Solidity's `-` operator.
-     *
-     * Requirements:
-     *
-     * - Subtraction cannot overflow.
-     */
-    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-        return sub(a, b, "SafeMath: subtraction overflow");
+    function add32(uint32 x, uint32 y) internal pure returns (uint32 z) {
+        require((z = x + y) >= x);
     }
 
-    /**
-     * @dev Returns the subtraction of two unsigned integers, reverting with custom message on
-     * overflow (when the result is negative).
-     *
-     * Counterpart to Solidity's `-` operator.
-     *
-     * Requirements:
-     *
-     * - Subtraction cannot overflow.
-     */
-    function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
-        require(b <= a, errorMessage);
-        uint256 c = a - b;
-
-        return c;
+    /// @notice Returns x - y, reverts if underflows
+    /// @param x The minuend
+    /// @param y The subtrahend
+    /// @return z The difference of x and y
+    function sub(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        require((z = x - y) <= x);
     }
 
-    /**
-     * @dev Returns the multiplication of two unsigned integers, reverting on
-     * overflow.
-     *
-     * Counterpart to Solidity's `*` operator.
-     *
-     * Requirements:
-     *
-     * - Multiplication cannot overflow.
-     */
-    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-        // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
-        // benefit is lost if 'b' is also tested.
-        // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522
-        if (a == 0) {
-            return 0;
-        }
-
-        uint256 c = a * b;
-        require(c / a == b, "SafeMath: multiplication overflow");
-
-        return c;
+    function sub32(uint32 x, uint32 y) internal pure returns (uint32 z) {
+        require((z = x - y) <= x);
     }
 
-    /**
-     * @dev Returns the integer division of two unsigned integers. Reverts on
-     * division by zero. The result is rounded towards zero.
-     *
-     * Counterpart to Solidity's `/` operator. Note: this function uses a
-     * `revert` opcode (which leaves remaining gas untouched) while Solidity
-     * uses an invalid opcode to revert (consuming all remaining gas).
-     *
-     * Requirements:
-     *
-     * - The divisor cannot be zero.
-     */
-    function div(uint256 a, uint256 b) internal pure returns (uint256) {
-        return div(a, b, "SafeMath: division by zero");
+    /// @notice Returns x * y, reverts if overflows
+    /// @param x The multiplicand
+    /// @param y The multiplier
+    /// @return z The product of x and y
+    function mul(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        require(x == 0 || (z = x * y) / x == y);
     }
 
-    /**
-     * @dev Returns the integer division of two unsigned integers. Reverts with custom message on
-     * division by zero. The result is rounded towards zero.
-     *
-     * Counterpart to Solidity's `/` operator. Note: this function uses a
-     * `revert` opcode (which leaves remaining gas untouched) while Solidity
-     * uses an invalid opcode to revert (consuming all remaining gas).
-     *
-     * Requirements:
-     *
-     * - The divisor cannot be zero.
-     */
-    function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
-        require(b > 0, errorMessage);
-        uint256 c = a / b;
-        // assert(a == b * c + a % b); // There is no case in which this doesn't hold
-
-        return c;
+    /// @notice Returns x + y, reverts if overflows or underflows
+    /// @param x The augend
+    /// @param y The addend
+    /// @return z The sum of x and y
+    function add(int256 x, int256 y) internal pure returns (int256 z) {
+        require((z = x + y) >= x == (y >= 0));
     }
 
-    /**
-     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),
-     * Reverts when dividing by zero.
-     *
-     * Counterpart to Solidity's `%` operator. This function uses a `revert`
-     * opcode (which leaves remaining gas untouched) while Solidity uses an
-     * invalid opcode to revert (consuming all remaining gas).
-     *
-     * Requirements:
-     *
-     * - The divisor cannot be zero.
-     */
-    function mod(uint256 a, uint256 b) internal pure returns (uint256) {
-        return mod(a, b, "SafeMath: modulo by zero");
+    /// @notice Returns x - y, reverts if overflows or underflows
+    /// @param x The minuend
+    /// @param y The subtrahend
+    /// @return z The difference of x and y
+    function sub(int256 x, int256 y) internal pure returns (int256 z) {
+        require((z = x - y) <= x == (y >= 0));
     }
 
-    /**
-     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),
-     * Reverts with custom message when dividing by zero.
-     *
-     * Counterpart to Solidity's `%` operator. This function uses a `revert`
-     * opcode (which leaves remaining gas untouched) while Solidity uses an
-     * invalid opcode to revert (consuming all remaining gas).
-     *
-     * Requirements:
-     *
-     * - The divisor cannot be zero.
-     */
-    function mod(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
-        require(b != 0, errorMessage);
-        return a % b;
+    function div(uint256 x, uint256 y) internal pure returns(uint256 z){
+        require(y > 0);
+        z=x/y;
     }
-
-    // babylonian method (https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method)
-    function sqrrt(uint256 a) internal pure returns (uint c) {
-        if (a > 3) {
-            c = a;
-            uint b = add( div( a, 2), 1 );
-            while (b < c) {
-                c = b;
-                b = div( add( div( a, b ), b), 2 );
-            }
-        } else if (a != 0) {
-            c = 1;
-        }
-    }
-
-    /*
-     * Expects percentage to be trailed by 00,
-    */
-    function percentageAmount( uint256 total_, uint8 percentage_ ) internal pure returns ( uint256 percentAmount_ ) {
-        return div( mul( total_, percentage_ ), 1000 );
-    }
-
-    /*
-     * Expects percentage to be trailed by 00,
-    */
-    function substractPercentage( uint256 total_, uint8 percentageToSub_ ) internal pure returns ( uint256 result_ ) {
-        return sub( total_, div( mul( total_, percentageToSub_ ), 1000 ) );
-    }
-
-    function percentageOfTotal( uint256 part_, uint256 total_ ) internal pure returns ( uint256 percent_ ) {
-        return div( mul(part_, 100) , total_ );
-    }
-
-    /**
-     * Taken from Hypersonic https://github.com/M2629/HyperSonic/blob/main/Math.sol
-     * @dev Returns the average of two numbers. The result is rounded towards
-     * zero.
-     */
-    function average(uint256 a, uint256 b) internal pure returns (uint256) {
-        // (a + b) / 2 can overflow, so we distribute
-        return (a / 2) + (b / 2) + ((a % 2 + b % 2) / 2);
-    }
-
-    function quadraticPricing( uint256 payment_, uint256 multiplier_ ) internal pure returns (uint256) {
-        return sqrrt( mul( multiplier_, payment_ ) );
-    }
-
-  function bondingCurve( uint256 supply_, uint256 multiplier_ ) internal pure returns (uint256) {
-      return mul( multiplier_, supply_ );
-  }
 }
 
 library Address {
@@ -529,27 +377,21 @@ abstract contract ERC20
     IERC20
   {
 
-  using SafeMath for uint256;
+  using LowGasSafeMath for uint256;
 
   // TODO comment actual hash value.
   bytes32 constant private ERC20TOKEN_ERC1820_INTERFACE_ID = keccak256( "ERC20Token" );
     
-  // Present in ERC777
   mapping (address => uint256) internal _balances;
 
-  // Present in ERC777
   mapping (address => mapping (address => uint256)) internal _allowances;
 
-  // Present in ERC777
   uint256 internal _totalSupply;
 
-  // Present in ERC777
   string internal _name;
     
-  // Present in ERC777
   string internal _symbol;
     
-  // Present in ERC777
   uint8 internal _decimals;
 
   /**
@@ -570,7 +412,6 @@ abstract contract ERC20
   /**
    * @dev Returns the name of the token.
    */
-  // Present in ERC777
   function name() public view returns (string memory) {
     return _name;
   }
@@ -579,7 +420,6 @@ abstract contract ERC20
    * @dev Returns the symbol of the token, usually a shorter version of the
    * name.
    */
-  // Present in ERC777
   function symbol() public view returns (string memory) {
     return _symbol;
   }
@@ -597,7 +437,6 @@ abstract contract ERC20
    * no way affects any of the arithmetic of the contract, including
    * {IERC20-balanceOf} and {IERC20-transfer}.
    */
-  // Present in ERC777
   function decimals() public view returns (uint8) {
     return _decimals;
   }
@@ -605,7 +444,6 @@ abstract contract ERC20
   /**
    * @dev See {IERC20-totalSupply}.
    */
-  // Present in ERC777
   function totalSupply() public view override returns (uint256) {
     return _totalSupply;
   }
@@ -613,7 +451,6 @@ abstract contract ERC20
   /**
    * @dev See {IERC20-balanceOf}.
    */
-  // Present in ERC777
   function balanceOf(address account) public view virtual override returns (uint256) {
     return _balances[account];
   }
@@ -626,8 +463,6 @@ abstract contract ERC20
    * - `recipient` cannot be the zero address.
    * - the caller must have a balance of at least `amount`.
    */
-  // Overrideen in ERC777
-  // Confirm that this behavior changes 
   function transfer(address recipient, uint256 amount) public virtual override returns (bool) {
     _transfer(msg.sender, recipient, amount);
     return true;
@@ -636,7 +471,6 @@ abstract contract ERC20
     /**
      * @dev See {IERC20-allowance}.
      */
-    // Present in ERC777
     function allowance(address owner, address spender) public view virtual override returns (uint256) {
         return _allowances[owner][spender];
     }
@@ -648,7 +482,6 @@ abstract contract ERC20
      *
      * - `spender` cannot be the zero address.
      */
-    // Present in ERC777
     function approve(address spender, uint256 amount) public virtual override returns (bool) {
         _approve(msg.sender, spender, amount);
         return true;
@@ -667,11 +500,10 @@ abstract contract ERC20
      * - the caller must have allowance for ``sender``'s tokens of at least
      * `amount`.
      */
-    // Present in ERC777
     function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {
         _transfer(sender, recipient, amount);
         _approve(sender, msg.sender, _allowances[sender][msg.sender]
-            .sub(amount, "ERC20: transfer amount exceeds allowance"));
+            .sub(amount));
         return true;
     }
 
@@ -708,7 +540,7 @@ abstract contract ERC20
      */
     function decreaseAllowance(address spender, uint256 subtractedValue) public virtual returns (bool) {
         _approve(msg.sender, spender, _allowances[msg.sender][spender]
-            .sub(subtractedValue, "ERC20: decreased allowance below zero"));
+            .sub(subtractedValue));
         return true;
     }
 
@@ -732,7 +564,7 @@ abstract contract ERC20
 
     _beforeTokenTransfer(sender, recipient, amount);
 
-    _balances[sender] = _balances[sender].sub(amount, "ERC20: transfer amount exceeds balance");
+    _balances[sender] = _balances[sender].sub(amount);
     _balances[recipient] = _balances[recipient].add(amount);
     emit Transfer(sender, recipient, amount);
   }
@@ -746,13 +578,12 @@ abstract contract ERC20
      *
      * - `to` cannot be the zero address.
      */
-    // Present in ERC777
     function _mint(address account_, uint256 ammount_) internal virtual {
         require(account_ != address(0), "ERC20: mint to the zero address");
         _beforeTokenTransfer(address( this ), account_, ammount_);
         _totalSupply = _totalSupply.add(ammount_);
         _balances[account_] = _balances[account_].add(ammount_);
-        emit Transfer(address( this ), account_, ammount_);
+        emit Transfer(address( 0 ), account_, ammount_);
     }
 
     /**
@@ -766,13 +597,12 @@ abstract contract ERC20
      * - `account` cannot be the zero address.
      * - `account` must have at least `amount` tokens.
      */
-    // Present in ERC777
     function _burn(address account, uint256 amount) internal virtual {
         require(account != address(0), "ERC20: burn from the zero address");
 
         _beforeTokenTransfer(account, address(0), amount);
 
-        _balances[account] = _balances[account].sub(amount, "ERC20: burn amount exceeds balance");
+        _balances[account] = _balances[account].sub(amount);
         _totalSupply = _totalSupply.sub(amount);
         emit Transfer(account, address(0), amount);
     }
@@ -790,7 +620,6 @@ abstract contract ERC20
      * - `owner` cannot be the zero address.
      * - `spender` cannot be the zero address.
      */
-    // Present in ERC777
     function _approve(address owner, address spender, uint256 amount) internal virtual {
         require(owner != address(0), "ERC20: approve from the zero address");
         require(spender != address(0), "ERC20: approve to the zero address");
@@ -821,12 +650,11 @@ abstract contract ERC20
    *
    * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
    */
-  // Present in ERC777
   function _beforeTokenTransfer( address from_, address to_, uint256 amount_ ) internal virtual { }
 }
 
 library Counters {
-    using SafeMath for uint256;
+    using LowGasSafeMath for uint256;
 
     struct Counter {
         // This variable should never be directly accessed by users of the library: interactions must be restricted to
@@ -900,7 +728,7 @@ abstract contract ERC20Permit is ERC20, IERC2612Permit {
     // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
     bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
 
-    bytes32 public DOMAIN_SEPARATOR;
+    bytes32 public immutable DOMAIN_SEPARATOR;
 
     constructor() {
 
@@ -939,7 +767,7 @@ abstract contract ERC20Permit is ERC20, IERC2612Permit {
         bytes32 _hash = keccak256(abi.encodePacked(uint16(0x1901), DOMAIN_SEPARATOR, hashStruct));
 
         address signer = ecrecover(_hash, v, r, s);
-        require(signer != address(0) && signer == owner, "ZeroSwapPermit: Invalid signature");
+        require(signer != address(0) && signer == owner, "ERC20Permit: Invalid signature");
 
         _nonces[owner].increment();
         _approve(owner, spender, amount);
@@ -953,62 +781,70 @@ abstract contract ERC20Permit is ERC20, IERC2612Permit {
     }
 }
 
-interface IOwnable {
-  function manager() external view returns (address);
-
-  function renounceManagement() external;
-  
-  function pushManagement( address newOwner_ ) external;
-  
-  function pullManagement() external;
+contract OwnableData {
+    address public owner;
+    address public pendingOwner;
 }
 
-contract Ownable is IOwnable {
+contract Ownable is OwnableData {
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
-    address internal _owner;
-    address internal _newOwner;
-
-    event OwnershipPushed(address indexed previousOwner, address indexed newOwner);
-    event OwnershipPulled(address indexed previousOwner, address indexed newOwner);
-
-    constructor () {
-        _owner = msg.sender;
-        emit OwnershipPushed( address(0), _owner );
+    /// @notice `owner` defaults to msg.sender on construction.
+    constructor() {
+        owner = msg.sender;
+        emit OwnershipTransferred(address(0), msg.sender);
     }
 
-    function manager() public view override returns (address) {
-        return _owner;
+    /// @notice Transfers ownership to `newOwner`. Either directly or claimable by the new pending owner.
+    /// Can only be invoked by the current `owner`.
+    /// @param newOwner Address of the new owner.
+    /// @param direct True if `newOwner` should be set immediately. False if `newOwner` needs to use `claimOwnership`.
+    /// @param renounce Allows the `newOwner` to be `address(0)` if `direct` and `renounce` is True. Has no effect otherwise.
+    function transferOwnership(
+        address newOwner,
+        bool direct,
+        bool renounce
+    ) public onlyOwner {
+        if (direct) {
+            // Checks
+            require(newOwner != address(0) || renounce, "Ownable: zero address");
+
+            // Effects
+            emit OwnershipTransferred(owner, newOwner);
+            owner = newOwner;
+            pendingOwner = address(0);
+        } else {
+            // Effects
+            pendingOwner = newOwner;
+        }
     }
 
-    modifier onlyManager() {
-        require( _owner == msg.sender, "Ownable: caller is not the owner" );
+    /// @notice Needs to be called by `pendingOwner` to claim ownership.
+    function claimOwnership() public {
+        address _pendingOwner = pendingOwner;
+
+        // Checks
+        require(msg.sender == _pendingOwner, "Ownable: caller != pending owner");
+
+        // Effects
+        emit OwnershipTransferred(owner, _pendingOwner);
+        owner = _pendingOwner;
+        pendingOwner = address(0);
+    }
+
+    /// @notice Only allows the `owner` to execute the function.
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Ownable: caller is not the owner");
         _;
-    }
-
-    function renounceManagement() public virtual override onlyManager() {
-        emit OwnershipPushed( _owner, address(0) );
-        _owner = address(0);
-    }
-
-    function pushManagement( address newOwner_ ) public virtual override onlyManager() {
-        require( newOwner_ != address(0), "Ownable: new owner is the zero address");
-        emit OwnershipPushed( _owner, newOwner_ );
-        _newOwner = newOwner_;
-    }
-    
-    function pullManagement() public virtual override {
-        require( msg.sender == _newOwner, "Ownable: must be new owner to pull");
-        emit OwnershipPulled( _owner, _newOwner );
-        _owner = _newOwner;
     }
 }
 
 contract MEMOries is ERC20Permit, Ownable {
 
-    using SafeMath for uint256;
+    using LowGasSafeMath for uint256;
 
     modifier onlyStakingContract() {
-        require( msg.sender == stakingContract );
+        require( msg.sender == stakingContract, "OSC" );
         _;
     }
 
@@ -1018,6 +854,7 @@ contract MEMOries is ERC20Permit, Ownable {
     event LogSupply(uint256 indexed epoch, uint256 timestamp, uint256 totalSupply );
     event LogRebase( uint256 indexed epoch, uint256 rebase, uint256 index );
     event LogStakingContractUpdated( address stakingContract );
+    event LogSetIndex(uint256 indexed index );
 
     struct Rebase {
         uint epoch;
@@ -1054,8 +891,8 @@ contract MEMOries is ERC20Permit, Ownable {
     }
 
     function initialize( address stakingContract_ ) external returns ( bool ) {
-        require( msg.sender == initializer );
-        require( stakingContract_ != address(0) );
+        require( msg.sender == initializer, "NA" );
+        require( stakingContract_ != address(0), "IA" );
         stakingContract = stakingContract_;
         _gonBalances[ stakingContract ] = TOTAL_GONS;
 
@@ -1066,10 +903,10 @@ contract MEMOries is ERC20Permit, Ownable {
         return true;
     }
 
-    function setIndex( uint _INDEX ) external onlyManager() returns ( bool ) {
-        require( INDEX == 0 );
+    function setIndex( uint _INDEX ) external onlyOwner() {
+        require( INDEX == 0, "INZ");
         INDEX = gonsForBalance( _INDEX );
-        return true;
+        emit LogSetIndex(INDEX);
     }
 
     /**

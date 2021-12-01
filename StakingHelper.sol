@@ -81,20 +81,23 @@ interface IStaking {
 
 contract StakingHelper {
 
-    address public immutable staking;
-    address public immutable Time;
+    event LogStake(address indexed recipient, uint amount);
+
+    IStaking public immutable staking;
+    IERC20 public immutable Time;
 
     constructor ( address _staking, address _Time ) {
         require( _staking != address(0) );
-        staking = _staking;
+        staking = IStaking(_staking);
         require( _Time != address(0) );
-        Time = _Time;
+        Time = IERC20(_Time);
     }
 
     function stake( uint _amount, address recipient ) external {
-        IERC20( Time ).transferFrom( msg.sender, address(this), _amount );
-        IERC20( Time ).approve( staking, _amount );
-        IStaking( staking ).stake( _amount, recipient );
-        IStaking( staking ).claim( recipient );
+        Time.transferFrom( msg.sender, address(this), _amount );
+        Time.approve( address(staking), _amount );
+        staking.stake( _amount, recipient );
+        staking.claim( recipient );
+        emit LogStake(recipient, _amount);
     }
 }

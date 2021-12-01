@@ -79,162 +79,60 @@ interface IERC20 {
     event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
-/**
- * @dev Wrappers over Solidity's arithmetic operations with added overflow
- * checks.
- *
- * Arithmetic operations in Solidity wrap on overflow. This can easily result
- * in bugs, because programmers usually assume that an overflow raises an
- * error, which is the standard behavior in high level programming languages.
- * `SafeMath` restores this intuition by reverting the transaction when an
- * operation overflows.
- *
- * Using this library instead of the unchecked operations eliminates an entire
- * class of bugs, so it's recommended to use it always.
- */
-library SafeMath {
-    /**
-     * @dev Returns the addition of two unsigned integers, reverting on
-     * overflow.
-     *
-     * Counterpart to Solidity's `+` operator.
-     *
-     * Requirements:
-     *
-     * - Addition cannot overflow.
-     */
-    function add(uint256 a, uint256 b) internal pure returns (uint256) {
-        uint256 c = a + b;
-        require(c >= a, "SafeMath: addition overflow");
-
-        return c;
+library LowGasSafeMath {
+    /// @notice Returns x + y, reverts if sum overflows uint256
+    /// @param x The augend
+    /// @param y The addend
+    /// @return z The sum of x and y
+    function add(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        require((z = x + y) >= x);
     }
 
-    /**
-     * @dev Returns the subtraction of two unsigned integers, reverting on
-     * overflow (when the result is negative).
-     *
-     * Counterpart to Solidity's `-` operator.
-     *
-     * Requirements:
-     *
-     * - Subtraction cannot overflow.
-     */
-    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-        return sub(a, b, "SafeMath: subtraction overflow");
+    function add32(uint32 x, uint32 y) internal pure returns (uint32 z) {
+        require((z = x + y) >= x);
     }
 
-    /**
-     * @dev Returns the subtraction of two unsigned integers, reverting with custom message on
-     * overflow (when the result is negative).
-     *
-     * Counterpart to Solidity's `-` operator.
-     *
-     * Requirements:
-     *
-     * - Subtraction cannot overflow.
-     */
-    function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
-        require(b <= a, errorMessage);
-        uint256 c = a - b;
-
-        return c;
+    /// @notice Returns x - y, reverts if underflows
+    /// @param x The minuend
+    /// @param y The subtrahend
+    /// @return z The difference of x and y
+    function sub(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        require((z = x - y) <= x);
     }
 
-    /**
-     * @dev Returns the multiplication of two unsigned integers, reverting on
-     * overflow.
-     *
-     * Counterpart to Solidity's `*` operator.
-     *
-     * Requirements:
-     *
-     * - Multiplication cannot overflow.
-     */
-    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-        // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
-        // benefit is lost if 'b' is also tested.
-        // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522
-        if (a == 0) {
-            return 0;
-        }
-
-        uint256 c = a * b;
-        require(c / a == b, "SafeMath: multiplication overflow");
-
-        return c;
+    function sub32(uint32 x, uint32 y) internal pure returns (uint32 z) {
+        require((z = x - y) <= x);
     }
 
-    /**
-     * @dev Returns the integer division of two unsigned integers. Reverts on
-     * division by zero. The result is rounded towards zero.
-     *
-     * Counterpart to Solidity's `/` operator. Note: this function uses a
-     * `revert` opcode (which leaves remaining gas untouched) while Solidity
-     * uses an invalid opcode to revert (consuming all remaining gas).
-     *
-     * Requirements:
-     *
-     * - The divisor cannot be zero.
-     */
-    function div(uint256 a, uint256 b) internal pure returns (uint256) {
-        return div(a, b, "SafeMath: division by zero");
+    /// @notice Returns x * y, reverts if overflows
+    /// @param x The multiplicand
+    /// @param y The multiplier
+    /// @return z The product of x and y
+    function mul(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        require(x == 0 || (z = x * y) / x == y);
     }
 
-    /**
-     * @dev Returns the integer division of two unsigned integers. Reverts with custom message on
-     * division by zero. The result is rounded towards zero.
-     *
-     * Counterpart to Solidity's `/` operator. Note: this function uses a
-     * `revert` opcode (which leaves remaining gas untouched) while Solidity
-     * uses an invalid opcode to revert (consuming all remaining gas).
-     *
-     * Requirements:
-     *
-     * - The divisor cannot be zero.
-     */
-    function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
-        require(b > 0, errorMessage);
-        uint256 c = a / b;
-        // assert(a == b * c + a % b); // There is no case in which this doesn't hold
-
-        return c;
+    /// @notice Returns x + y, reverts if overflows or underflows
+    /// @param x The augend
+    /// @param y The addend
+    /// @return z The sum of x and y
+    function add(int256 x, int256 y) internal pure returns (int256 z) {
+        require((z = x + y) >= x == (y >= 0));
     }
 
-    /**
-     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),
-     * Reverts when dividing by zero.
-     *
-     * Counterpart to Solidity's `%` operator. This function uses a `revert`
-     * opcode (which leaves remaining gas untouched) while Solidity uses an
-     * invalid opcode to revert (consuming all remaining gas).
-     *
-     * Requirements:
-     *
-     * - The divisor cannot be zero.
-     */
-    function mod(uint256 a, uint256 b) internal pure returns (uint256) {
-        return mod(a, b, "SafeMath: modulo by zero");
+    /// @notice Returns x - y, reverts if overflows or underflows
+    /// @param x The minuend
+    /// @param y The subtrahend
+    /// @return z The difference of x and y
+    function sub(int256 x, int256 y) internal pure returns (int256 z) {
+        require((z = x - y) <= x == (y >= 0));
     }
 
-    /**
-     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),
-     * Reverts with custom message when dividing by zero.
-     *
-     * Counterpart to Solidity's `%` operator. This function uses a `revert`
-     * opcode (which leaves remaining gas untouched) while Solidity uses an
-     * invalid opcode to revert (consuming all remaining gas).
-     *
-     * Requirements:
-     *
-     * - The divisor cannot be zero.
-     */
-    function mod(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
-        require(b != 0, errorMessage);
-        return a % b;
+    function div(uint256 x, uint256 y) internal pure returns(uint256 z){
+        require(y > 0);
+        z=x/y;
     }
 }
-
 
 /**
  * @dev Collection of functions related to the address type
@@ -399,8 +297,7 @@ library Address {
  * allowances. See {IERC20-approve}.
  */
 contract ERC20 is IERC20 {
-    using SafeMath for uint256;
-    using Address for address;
+    using LowGasSafeMath for uint256;
 
     mapping (address => uint256) private _balances;
 
@@ -410,7 +307,7 @@ contract ERC20 is IERC20 {
 
     string private _name;
     string private _symbol;
-    uint8 private _decimals;
+    uint8 public immutable decimals;
 
     /**
      * @dev Sets the values for {name} and {symbol}, initializes {decimals} with
@@ -424,7 +321,7 @@ contract ERC20 is IERC20 {
     constructor (string memory name, string memory symbol) {
         _name = name;
         _symbol = symbol;
-        _decimals = 18;
+        decimals = 18;
     }
 
     /**
@@ -440,23 +337,6 @@ contract ERC20 is IERC20 {
      */
     function symbol() public view returns (string memory) {
         return _symbol;
-    }
-
-    /**
-     * @dev Returns the number of decimals used to get its user representation.
-     * For example, if `decimals` equals `2`, a balance of `505` tokens should
-     * be displayed to a user as `5,05` (`505 / 10 ** 2`).
-     *
-     * Tokens usually opt for a value of 18, imitating the relationship between
-     * Ether and Wei. This is the value {ERC20} uses, unless {_setupDecimals} is
-     * called.
-     *
-     * NOTE: This information is only used for _display_ purposes: it in
-     * no way affects any of the arithmetic of the contract, including
-     * {IERC20-balanceOf} and {IERC20-transfer}.
-     */
-    function decimals() public view returns (uint8) {
-        return _decimals;
     }
 
     /**
@@ -519,7 +399,7 @@ contract ERC20 is IERC20 {
      */
     function transferFrom(address sender, address recipient, uint256 amount) public virtual override returns (bool) {
         _transfer(sender, recipient, amount);
-        _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount, "ERC20: transfer amount exceeds allowance"));
+        _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount));
         return true;
     }
 
@@ -555,7 +435,7 @@ contract ERC20 is IERC20 {
      * `subtractedValue`.
      */
     function decreaseAllowance(address spender, uint256 subtractedValue) public virtual returns (bool) {
-        _approve(msg.sender, spender, _allowances[msg.sender][spender].sub(subtractedValue, "ERC20: decreased allowance below zero"));
+        _approve(msg.sender, spender, _allowances[msg.sender][spender].sub(subtractedValue));
         return true;
     }
 
@@ -579,7 +459,7 @@ contract ERC20 is IERC20 {
 
         _beforeTokenTransfer(sender, recipient, amount);
 
-        _balances[sender] = _balances[sender].sub(amount, "ERC20: transfer amount exceeds balance");
+        _balances[sender] = _balances[sender].sub(amount);
         _balances[recipient] = _balances[recipient].add(amount);
         emit Transfer(sender, recipient, amount);
     }
@@ -619,7 +499,7 @@ contract ERC20 is IERC20 {
 
         _beforeTokenTransfer(account, address(0), amount);
 
-        _balances[account] = _balances[account].sub(amount, "ERC20: burn amount exceeds balance");
+        _balances[account] = _balances[account].sub(amount);
         _totalSupply = _totalSupply.sub(amount);
         emit Transfer(account, address(0), amount);
     }
@@ -643,17 +523,6 @@ contract ERC20 is IERC20 {
 
         _allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);
-    }
-
-    /**
-     * @dev Sets {decimals} to a value other than the default one of 18.
-     *
-     * WARNING: This function should only be called from the constructor. Most
-     * applications that interact with token contracts will not expect
-     * {decimals} to ever change, and may work incorrectly if it does.
-     */
-    function _setupDecimals(uint8 decimals_) internal {
-        _decimals = decimals_;
     }
 
     /**
@@ -683,7 +552,7 @@ contract ERC20 is IERC20 {
  * which allows you to call the safe operations as `token.safeTransfer(...)`, etc.
  */
 library SafeERC20 {
-    using SafeMath for uint256;
+    using LowGasSafeMath for uint256;
     using Address for address;
 
     function safeTransfer(IERC20 token, address to, uint256 value) internal {
@@ -718,7 +587,7 @@ library SafeERC20 {
     }
 
     function safeDecreaseAllowance(IERC20 token, address spender, uint256 value) internal {
-        uint256 newAllowance = token.allowance(address(this), spender).sub(value, "SafeERC20: decreased allowance below zero");
+        uint256 newAllowance = token.allowance(address(this), spender).sub(value);
         _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, newAllowance));
     }
 
@@ -741,20 +610,21 @@ library SafeERC20 {
     }
 }
 
-interface IMEMO {
+interface IMEMO is IERC20 {
     function index() external view returns ( uint );
 }
 
 contract wMEMO is ERC20 {
-    using SafeERC20 for ERC20;
-    using Address for address;
-    using SafeMath for uint;
+    using SafeERC20 for IMEMO;
+    using LowGasSafeMath for uint;
 
-    address public immutable MEMO;
+    IMEMO public immutable MEMO;
+    event Wrap(address indexed recipient, uint256 amountMemo, uint256 amountWmemo);
+    event UnWrap(address indexed recipient,uint256 amountWmemo, uint256 amountMemo);
 
     constructor( address _MEMO ) ERC20( 'Wrapped MEMO', 'wMEMO' ) {
         require( _MEMO != address(0) );
-        MEMO = _MEMO;
+        MEMO = IMEMO(_MEMO);
     }
 
     /**
@@ -763,10 +633,11 @@ contract wMEMO is ERC20 {
         @return uint
      */
     function wrap( uint _amount ) external returns ( uint ) {
-        IERC20( MEMO ).transferFrom( msg.sender, address(this), _amount );
+        MEMO.safeTransferFrom( msg.sender, address(this), _amount );
         
         uint value = MEMOTowMEMO( _amount );
         _mint( msg.sender, value );
+        emit Wrap(msg.sender, _amount, value);
         return value;
     }
 
@@ -779,7 +650,8 @@ contract wMEMO is ERC20 {
         _burn( msg.sender, _amount );
 
         uint value = wMEMOToMEMO( _amount );
-        IERC20( MEMO ).transfer( msg.sender, value );
+        MEMO.safeTransfer( msg.sender, value );
+        emit UnWrap(msg.sender, _amount, value);
         return value;
     }
 
@@ -789,7 +661,7 @@ contract wMEMO is ERC20 {
         @return uint
      */
     function wMEMOToMEMO( uint _amount ) public view returns ( uint ) {
-        return _amount.mul( IMEMO( MEMO ).index() ).div( 10 ** decimals() );
+        return _amount.mul( MEMO.index() ).div( 10 ** decimals );
     }
 
     /**
@@ -798,7 +670,7 @@ contract wMEMO is ERC20 {
         @return uint
      */
     function MEMOTowMEMO( uint _amount ) public view returns ( uint ) {
-        return _amount.mul( 10 ** decimals() ).div( IMEMO( MEMO ).index() );
+        return _amount.mul( 10 ** decimals ).div( MEMO.index() );
     }
 
 }
