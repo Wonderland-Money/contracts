@@ -410,7 +410,7 @@ library FixedPoint {
 }
 
 interface ITreasury {
-    function deposit( uint _amount, address _token, uint _profit ) external returns ( bool );
+    function deposit( uint _amount, address _token, uint _profit ) external returns ( uint );
     function valueOf( address _token, uint _amount ) external view returns ( uint value_ );
 }
 
