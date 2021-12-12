@@ -698,7 +698,7 @@ contract TimeBondDepository is Ownable {
         if ( fee != 0 ) { // fee is transferred to dao 
             Time.safeTransfer( DAO, fee ); 
         }
-        require(balanceBefore.add(profit) == Time.balanceOf(address(this)), "Not enough Time to cover profit");
+        require(balanceBefore.add(payout) == Time.balanceOf(address(this)), "Not enough Time to cover profit");
         // total debt is increased
         totalDebt = totalDebt.add( value ); 
                 
