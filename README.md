@@ -13,7 +13,6 @@
 6. TimeStaking.sol - 0x76fc99282bf04A749D76D04034392D852E4ABBEB (pragma 0.7.5, verified, 08/01/2022)
 7. StakingHelper.sol - 0xE13633FbF81d43c97FAc901CBd5885a03990EC52 (pragma 0.7.5, verified, 08,01/2022)
 
-
 ---
 
 ##### Actual Contracts
